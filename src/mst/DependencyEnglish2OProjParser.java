@@ -48,9 +48,8 @@ public class DependencyEnglish2OProjParser
 		//INITIALIZE PARSER
 		ServerSocket parseServer = null;
 		BufferedReader br;
-		OutputStream outStream=null;
 		PrintWriter outputWriter;
-		Socket clientSocket = null;
+		Socket clientSocket;
 		try {
 			parseServer = new ServerSocket(port);
 		}
@@ -68,7 +67,6 @@ public class DependencyEnglish2OProjParser
 				System.err.println("Connection Accepted From: "+clientSocket.getInetAddress());
 				br = new BufferedReader(new InputStreamReader(new DataInputStream(clientSocket.getInputStream())));
 				outputWriter = new PrintWriter(new PrintStream(clientSocket.getOutputStream()));
-				outStream = new PrintStream(clientSocket.getOutputStream());		
 				String inputLine;
 				String doc="";
 				while ((inputLine = br.readLine()) != null)
@@ -95,7 +93,7 @@ public class DependencyEnglish2OProjParser
 			outputWriter.print(output);
 			outputWriter.flush();
 			outputWriter.close();
-			}catch (IOException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}	
@@ -108,7 +106,7 @@ public class DependencyEnglish2OProjParser
 		try
 		{
 			BufferedReader bReader = new BufferedReader(new FileReader(file));
-			String line=null;
+			String line;
 			while((line=bReader.readLine())!=null)
 				if(line.equals(""))
 					output=output.trim()+"\n";
