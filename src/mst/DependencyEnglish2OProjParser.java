@@ -1,17 +1,6 @@
 package mst;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -24,7 +13,7 @@ public class DependencyEnglish2OProjParser
 	 * arg[1]=tempdir
 	 * arg[2]=port
 	 */
-	public static void main(String[] args) throws FileNotFoundException, Exception
+	public static void main(String[] args) throws Exception
 	{
 				
 		if(args.length!=3)
