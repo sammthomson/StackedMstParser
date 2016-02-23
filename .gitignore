@@ -1,0 +1,25 @@
+# Compiled artifacts
+*.class
+*.pyc
+/target
+/dependency-reduced-pom.xml
+
+# IDE cruft
+.idea
+*.iml
+.classpath
+.project
+.pydevproject
+
+# Emacs cruft
+*\~
+
+# Mac cruft
+.DS_Store
+
+# Data
+/data
+
+# experimental artifacts
+/models
+/experiments
