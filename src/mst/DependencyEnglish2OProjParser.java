@@ -21,8 +21,8 @@ public class DependencyEnglish2OProjParser
 			System.out.println("Usage: DependencyEnglish2OProjParser <model-file> <tmpdir> <port>");
 			System.exit(1);
 		}
-		String modelFile=args[0].trim();
-		int port=new Integer(args[2].trim());
+		String modelFile = args[0].trim();
+		int port = new Integer(args[2].trim());
 		System.setProperty("java.io.tmpdir", args[1]);
 		ArrayList<String> argsList = new ArrayList<String>();
 		argsList.add("test");
