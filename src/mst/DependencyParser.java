@@ -1,18 +1,11 @@
 package mst;
 
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.StringTokenizer;
-
-import mst.Alphabet;
-import mst.io.*;
+import edu.umass.cs.mallet.base.classify.Classifier;
 import mst.mallet.LabelClassifier;
 
-import gnu.trove.*;
+import java.io.*;
 
-import edu.umass.cs.mallet.base.classify.Classifier;
 
 public class DependencyParser {
 
@@ -24,7 +17,7 @@ public class DependencyParser {
 	private Classifier classifier;
 
 	public DependencyParser(DependencyPipe pipe, ParserOptions options) {
-		this.pipe=pipe;
+		this.pipe = pipe;
 		this.options = options;
 
 		// Set up arrays
@@ -40,42 +33,31 @@ public class DependencyParser {
 		int i;
 		int numInstances = ignore.length;
 		int numActualInstances = 0;
-		for (i = 0; i < numInstances; i++)
-		{
+		for (i = 0; i < numInstances; i++) {
 			if (ignore[i] == 0) // This sentence is not to be ignored
 				numActualInstances++;
 		}
 		return numActualInstances;
 	}
 
-	public void augment(int[] instanceLengths, String trainfile, File train_forest, int numParts) 
-	throws IOException {
-
-		//System.out.print("About to train. ");
-		//System.out.print("Num Feats: " + pipe.dataAlphabet.size());
+	public void augment(int[] instanceLengths,
+                        String trainfile,
+                        File train_forest,
+                        int numParts) throws IOException {
 
 		int i, j;
 		int[] ignore = new int[instanceLengths.length];
-
-		//String trainpartfile;
-		//createPartitions(instanceLengths, trainfile, numParts);
-		//for(i = 0; i < numParts; i++)
-		//{
-		//	trainpartfile = trainfile + "." + i;
-		//}
 
 		int numInstances = instanceLengths.length;
 		int numInstancesPerPart = numInstances / numParts; // The last partition becomes bigger
 		pipe.initOutputFile(options.outfile); // Initialize the output file once
 
-		for(j = 0; j < numParts; j++)
-		{
+		for(j = 0; j < numParts; j++) {
 			System.out.println("Training classifier for partition " + j);    
 
 			// Make partition
-			for (i = 0; i < numInstances; i++)
-			{
-				if (i >= j * numInstancesPerPart &&
+			for (i = 0; i < numInstances; i++) {
+                if (i >= j * numInstancesPerPart &&
 						i < (j+1) * numInstancesPerPart)
 					ignore[i] = 1; // Mark to ignore this instance in training
 				else
@@ -99,35 +81,32 @@ public class DependencyParser {
 
 	
 	
-	public void train(int[] instanceLengths, int[] ignore, String trainfile, File train_forest) 
-	throws IOException {
+	public void train(int[] instanceLengths,
+                      int[] ignore,
+                      String trainfile,
+                      File train_forest) throws IOException {
 		
-		int i = 0;
+		int i;
 		for(i = 0; i < options.numIters; i++) {
-
 			System.out.print(" Iteration "+i);
 			System.out.print("[");
 
 			long start = System.currentTimeMillis();
 			
-			trainingIter(instanceLengths,ignore,trainfile,train_forest,i+1);
+			trainingIter(instanceLengths,ignore, train_forest,i+1);
 
 			long end = System.currentTimeMillis();
 			//System.out.println("Training iter took: " + (end-start));
 			System.out.println("|Time:"+(end-start)+"]");			
 		}
-		params.averageParams(i*countActualInstances(ignore));
+		params.averageParams(i * countActualInstances(ignore));
 		//	 afm 06-04-08
-		if (options.separateLab)
-		{		
+		if (options.separateLab) {
 			LabelClassifier oc = new LabelClassifier(options, instanceLengths,ignore,trainfile,train_forest,this, pipe);
-			try
-			{
-				classifier = oc.trainClassifier(100);
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
+			try {
+                classifier = oc.trainClassifier(100);
+			} catch(Exception e) {
+                e.printStackTrace();
 			}
 		}
 	}
@@ -135,14 +114,14 @@ public class DependencyParser {
 	// Note: Change this to pass -1 for indices in instanceLengths[] that you
 	// don't want to use on training (need to be careful because i is being used
 	// in the for loop; need new index)
-	private void trainingIter(int[] instanceLengths, int ignore[], String trainfile, 
-			File train_forest, int iter) throws IOException {
+	private void trainingIter(int[] instanceLengths,
+                              int ignore[],
+                              File train_forest,
+                              int iter) throws IOException {
 
-		int numUpd = 0;
-		ObjectInputStream in = new ObjectInputStream(new FileInputStream(train_forest));
-		boolean evaluateI = true;
+        final ObjectInputStream in = new ObjectInputStream(new FileInputStream(train_forest));
 
-		int numInstances = instanceLengths.length;
+        int numInstances = instanceLengths.length;
 
 		// afm -- Count the real number of instances to be considered
 		int numActualInstances = countActualInstances(ignore);
@@ -220,41 +199,33 @@ public class DependencyParser {
 	///////////////////////////////////////////////////////
 	// Saving and loading models
 	///////////////////////////////////////////////////////
-	public void saveModel(String file) throws IOException 
-	{
+	public void saveModel(String file) throws IOException {
 		ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file));
 		out.writeObject(params.parameters);
 		out.writeObject(pipe.dataAlphabet);
 		out.writeObject(pipe.typeAlphabet);
 
 		// afm 06-04-08
-		if (options.separateLab)
-		{
+		if (options.separateLab) {
 			out.writeObject(classifier);
 		}
 
 		out.close();
-
-
 	}
 
-	public void loadModel(String file) throws Exception 
-	{
+	public void loadModel(String file) throws Exception {
 		ObjectInputStream in = new ObjectInputStream(new FileInputStream(file));
 		params.parameters = (double[])in.readObject();
 		pipe.dataAlphabet = (Alphabet)in.readObject();
 		pipe.typeAlphabet = (Alphabet)in.readObject();
 
 		// afm 06-04-08
-		if (options.separateLab)
-		{
+		if (options.separateLab) {
 			classifier = (Classifier)in.readObject();
 		}
 
 		in.close();
 		pipe.closeAlphabets();
-
-
 	}
 
 
@@ -278,9 +249,8 @@ public class DependencyParser {
 		int cnt = 0;
 		int i = 0;
 		LabelClassifier oc = new LabelClassifier(options);
-		while(instance != null) 
-		{
-			cnt++;
+		while(instance != null) {
+            cnt++;
 			System.out.print(cnt+" ");
 			String[] forms = instance.forms;
 
@@ -314,9 +284,8 @@ public class DependencyParser {
 			int K = options.testK;
 			Object[][] d = null;
 			
-			if(options.decodeType.equals("proj")) 
-			{
-				if(options.secondOrder)
+			if(options.decodeType.equals("proj")) {
+                if(options.secondOrder)
 					d = ((DependencyDecoder2O)decoder).decodeProjective(instance,fvs,probs,
 							fvs_trips,probs_trips,
 							fvs_sibs,probs_sibs,
@@ -324,20 +293,15 @@ public class DependencyParser {
 				else
 					d = decoder.decodeProjective(instance,fvs,probs,nt_fvs,nt_probs,K);
 			}
-			if(options.decodeType.equals("non-proj")) 
-			{
-				
-				if(options.secondOrder)
-				{					
-					d = ((DependencyDecoder2O)decoder).decodeNonProjective(instance,fvs,probs,
+			if(options.decodeType.equals("non-proj")) {
+                if(options.secondOrder) {
+                    d = ((DependencyDecoder2O)decoder).decodeNonProjective(instance,fvs,probs,
 							fvs_trips,probs_trips,
 							fvs_sibs,probs_sibs,
 							nt_fvs,nt_probs,K);
-					
-					
-				}
-				else
-					d = decoder.decodeNonProjective(instance,fvs,probs,nt_fvs,nt_probs,K);
+				} else {
+                    d = decoder.decodeNonProjective(instance, fvs, probs, nt_fvs, nt_probs, K);
+                }
 			}
 
 			String[] res = ((String)d[0][1]).split(" ");
@@ -348,11 +312,8 @@ public class DependencyParser {
 			String[] labels = new String[formsNoRoot.length];
 			int[] heads = new int[formsNoRoot.length];
 
-			Arrays.toString(forms);
-			Arrays.toString(res);
-			for(int j = 0; j < formsNoRoot.length; j++) 
-			{
-				formsNoRoot[j] = forms[j+1];
+			for(int j = 0; j < formsNoRoot.length; j++) {
+                formsNoRoot[j] = forms[j+1];
 				posNoRoot[j] = pos[j+1];
 
 				String[] trip = res[j].split("[\\|:]");
@@ -361,8 +322,7 @@ public class DependencyParser {
 			}		
 			
 			//	 afm 06-04-08
-			if (options.separateLab)
-			{
+			if (options.separateLab) {
 				/*
 				 * ask whether instance contains level0 information
 				 */
@@ -370,23 +330,21 @@ public class DependencyParser {
 				 * Note, forms and pos have the root. labels and heads do not
 				 */
 				if (options.stackedLevel1)
-					labels=oc.outputLabels(classifier,instance.forms,instance.postags,labels,heads,instance.deprels_pred, instance.heads_pred, instance);
+					labels=oc.outputLabels(classifier, instance.forms, instance.postags, labels, heads, instance.deprels_pred, instance.heads_pred, instance);
 				else
-					labels=oc.outputLabels(classifier,instance.forms,instance.postags,labels,heads, null, null, instance);
+					labels=oc.outputLabels(classifier, instance.forms, instance.postags, labels, heads, null, null, instance);
 
 			}
 			
 			// afm 03-07-08
 			//if (ignore == null)
-			if (options.stackedLevel0 == false)
+			if (!options.stackedLevel0)
 				pipe.outputInstance(new DependencyInstance(formsNoRoot, posNoRoot, labels, heads));
-			else
-			{
-				int[] headsNoRoot = new int[instance.heads.length-1];
+			else {
+                int[] headsNoRoot = new int[instance.heads.length-1];
 				String[] labelsNoRoot = new String[instance.heads.length-1];
-				for(int j = 0; j < headsNoRoot.length; j++) 
-				{
-					headsNoRoot[j] = instance.heads[j+1];
+				for(int j = 0; j < headsNoRoot.length; j++) {
+                    headsNoRoot[j] = instance.heads[j+1];
 					labelsNoRoot[j] = instance.deprels[j+1];
 				}
 				DependencyInstance out_inst = new DependencyInstance(formsNoRoot, posNoRoot, labelsNoRoot, headsNoRoot);
@@ -421,20 +379,18 @@ public class DependencyParser {
 	/////////////////////////////////////////////////////
 	// RUNNING THE PARSER
 	////////////////////////////////////////////////////
-	public static void main (String[] args) throws FileNotFoundException, Exception
-	{
+	public static void main (String[] args) throws Exception {
 		System.setProperty("java.io.tmpdir", "./tmp/");
 		ParserOptions options = new ParserOptions(args);
-		System.out.println("Default temp directory:"+System.getProperty("java.io.tmpdir"));
+		System.out.println("Default temp directory:" + System.getProperty("java.io.tmpdir"));
 		
 		System.out.println("Separate labeling: " + options.separateLab);	
 		
-		if (options.train)
-		{
+		if (options.train) {
 			DependencyPipe pipe = options.secondOrder ? 
 					new DependencyPipe2O (options) : new DependencyPipe (options);
 			int[] instanceLengths = 
-				pipe.createInstances(options.trainfile,options.trainforest);
+				pipe.createInstances(options.trainfile, options.trainforest);
 			pipe.closeAlphabets();
 			DependencyParser dp = new DependencyParser(pipe, options);
 			//pipe.printModelStats(null);
@@ -442,12 +398,12 @@ public class DependencyParser {
 			int numTypes = pipe.typeAlphabet.size();
 			System.out.print("Num Feats: " + numFeats);	
 			System.out.println(".\tNum Edge Labels: " + numTypes);
-			if (options.stackedLevel0) // Augment training data with output predictions, for stacked learning (afm 03-03-08)
-			{
+            // Augment training data with output predictions, for stacked learning (afm 03-03-08)
+			if (options.stackedLevel0) {
 				// Output data augmented with output predictions
 				System.out.println("Augmenting training data with output predictions...");	    
 				options.testfile = options.trainfile;
-				dp.augment(instanceLengths,options.trainfile,options.trainforest,options.augmentNumParts);
+				dp.augment(instanceLengths, options.trainfile, options.trainforest, options.augmentNumParts);
 				// Now train the base classifier in the whole corpus, nothing being ignored
 				System.out.println("Training the base classifier in the whole corpus...");	    
 			}
@@ -456,7 +412,7 @@ public class DependencyParser {
 			for (int i = 0; i < instanceLengths.length; i++)
 				ignore[i] = 0;
 			dp.params = new Parameters(pipe.dataAlphabet.size());	    	    
-			dp.train(instanceLengths,ignore,options.trainfile,options.trainforest);
+			dp.train(instanceLengths, ignore, options.trainfile, options.trainforest);
 			System.out.print("Saving model...");
 			dp.saveModel(options.modelName);
 			System.out.print("done.");

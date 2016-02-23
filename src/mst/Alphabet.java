@@ -14,22 +14,22 @@
 
 package mst;
 
-import java.util.ArrayList;
-import java.io.*;
-import java.util.Iterator;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
-public class Alphabet implements Serializable
-{
+
+public class Alphabet implements Serializable {
     gnu.trove.TObjectIntHashMap map;
     int numEntries;
     boolean growthStopped = false;
 
-    public Alphabet (int capacity)
-    {
-	this.map = new gnu.trove.TObjectIntHashMap (capacity);
-	//this.map.setDefaultValue(-1);
+    public Alphabet (int capacity) {
+        this.map = new gnu.trove.TObjectIntHashMap (capacity);
+        //this.map.setDefaultValue(-1);
 
-	numEntries = 0;
+        numEntries = 0;
     }
 
     public Alphabet ()
@@ -41,19 +41,19 @@ public class Alphabet implements Serializable
     /** Return -1 if entry isn't present. */
     public int lookupIndex (Object entry)
     {
-	if (entry == null) {
-	    throw new IllegalArgumentException ("Can't lookup \"null\" in an Alphabet.");
-	}
+        if (entry == null) {
+            throw new IllegalArgumentException ("Can't lookup \"null\" in an Alphabet.");
+        }
 
-	int ret = map.get(entry);
+        int ret = map.get(entry);
 
-	if (ret == -1 && !growthStopped) {
-	    ret = numEntries;
-	    map.put (entry, ret);
-	    numEntries++;
-	}
-	
-	return ret;
+        if (ret == -1 && !growthStopped) {
+            ret = numEntries;
+            map.put (entry, ret);
+            numEntries++;
+        }
+
+        return ret;
     }
 
     public Object[] toArray () {
@@ -93,17 +93,16 @@ public class Alphabet implements Serializable
     private static final int CURRENT_SERIAL_VERSION = 0;
 
     private void writeObject (ObjectOutputStream out) throws IOException {
-	out.writeInt (CURRENT_SERIAL_VERSION);
-	out.writeInt (numEntries);
-	out.writeObject(map);
-	out.writeBoolean (growthStopped);
+        out.writeInt (CURRENT_SERIAL_VERSION);
+        out.writeInt (numEntries);
+        out.writeObject(map);
+        out.writeBoolean (growthStopped);
     }
 
     private void readObject (ObjectInputStream in) throws IOException, ClassNotFoundException {
-	int version = in.readInt ();
-	numEntries = in.readInt();
-	map = (gnu.trove.TObjectIntHashMap)in.readObject();
-	growthStopped = in.readBoolean();
+        int version = in.readInt ();
+        numEntries = in.readInt();
+        map = (gnu.trove.TObjectIntHashMap)in.readObject();
+        growthStopped = in.readBoolean();
     }
-	
 }
