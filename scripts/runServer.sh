@@ -9,6 +9,6 @@ cd "${BASE_DIR}"
 
 CLASSPATH="./target:./lib/trove.jar:./lib/mallet.jar:./lib/mallet-deps.jar"
 
-java -cp "${CLASSPATH}" -Xms8g -Xmx8g mst.SecondOrderProjectiveSocketServer \
+java -cp "${CLASSPATH}" -Xms5g -Xmx5g mst.SecondOrderProjectiveSocketServer \
   "${MODEL}" \
   ${PORT}

@@ -19,7 +19,7 @@ CLASSPATH="./target:./lib/trove.jar:./lib/mallet.jar:./lib/mallet-deps.jar"
 mkdir -p "${experiment_dir}"
 
 # Train
-java -cp "${CLASSPATH}" -Xms8g -Xmx8g mst.DependencyParser train \
+java -cp "${CLASSPATH}" -Xms5g -Xmx5g mst.DependencyParser train \
   separate-lab \
   separate-lab-cutoff:0 \
   iters:10 \
@@ -30,7 +30,7 @@ java -cp "${CLASSPATH}" -Xms8g -Xmx8g mst.DependencyParser train \
   format:CONLL
 
 # Test
-java -cp "${CLASSPATH}" -Xms8g -Xmx8g mst.DependencyParser test \
+java -cp "${CLASSPATH}" -Xms5g -Xmx5g mst.DependencyParser test \
   separate-lab \
   model-name:"${model}" \
   decode-type:proj \
@@ -40,7 +40,7 @@ java -cp "${CLASSPATH}" -Xms8g -Xmx8g mst.DependencyParser test \
   format:CONLL
 
 # Eval
-java -cp "${CLASSPATH}" -Xms8g -Xmx8g mst.DependencyParser eval \
+java -cp "${CLASSPATH}" -Xms5g -Xmx5g mst.DependencyParser eval \
   gold-file:"${test}" \
   output-file:"${output}" \
   format:CONLL > "${eval_results}"
