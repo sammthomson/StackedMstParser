@@ -4,6 +4,9 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import static edu.umass.cs.mallet.base.util.IoUtils.contentsAsString;
+
+
 public class DependencyEnglish2OProjParser {
     /*
      * arg[0]=modelfile
@@ -56,19 +59,19 @@ public class DependencyEnglish2OProjParser {
                         break;
                     doc = doc + Util.getCoNLLFormat(inputLine);
                 }
-                //WRITE INPUT TO TEMP FILE
+                // WRITE INPUT TO TEMP FILE
                 final File tempFile = File.createTempFile("serverInputFile", ".txt");
                 // Delete temp file when program exits.
                 tempFile.deleteOnExit();
-                // Write to temp file
+                // Write output to temp file
                 final BufferedWriter out = new BufferedWriter(new FileWriter(tempFile));
                 out.write(doc);
                 out.close();
-                final File parseFile = File.createTempFile("parsedServerFile", ".txt");
+                final File parseFile = File.createTempFile("parsedServerFile",".txt");
                 options.testfile = tempFile.getAbsolutePath();
                 options.outfile = parseFile.getAbsolutePath();
                 dp.outputParses(null);
-                final String output = getLines(parseFile.getAbsolutePath());
+                final String output = contentsAsString(new File(parseFile.getAbsolutePath()));
                 tempFile.delete();
                 parseFile.delete();
                 outputWriter.print(output);
@@ -78,18 +81,5 @@ public class DependencyEnglish2OProjParser {
                 e.printStackTrace();
             }
         }
-    }
-
-    public static String getLines(String file) throws Exception {
-        String output = "";
-        final BufferedReader bReader = new BufferedReader(new FileReader(file));
-        String line;
-        while((line = bReader.readLine()) != null)
-            if(line.equals(""))
-                output = output.trim() + "\n";
-            else
-                output += line + "\t";
-        bReader.close();
-        return output;
     }
 }

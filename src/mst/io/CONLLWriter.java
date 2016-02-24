@@ -25,36 +25,34 @@ import mst.DependencyInstance;
  *
  * @author Jason Baldridge
  * @version $Id: CONLLWriter.java 94 2007-01-17 17:05:12Z jasonbaldridge $
- * @see mstparser.io.DependencyWriter
+ * @see mst.io.DependencyWriter
  */
 public class CONLLWriter extends DependencyWriter {
-
     public CONLLWriter (boolean labeled) {
-    	this.labeled = labeled;
+        this.labeled = labeled;
     }
 
     public void write(DependencyInstance instance) throws IOException {
-	
-	for (int i=0; i<instance.length(); i++) {
-	    writer.write(Integer.toString(i+1));                writer.write('\t');
-	    writer.write(instance.forms[i]);                    writer.write('\t');
-	    writer.write(instance.forms[i]);                    writer.write('\t'); // Shouldn't it be "lemmas" here??
-	    //writer.write(instance.cpostags[i]);                 writer.write('\t');
-	    writer.write(instance.postags[i]);                  writer.write('\t');
-	    writer.write(instance.postags[i]);                  writer.write('\t');
-	    writer.write("-");                                  writer.write('\t');
-	    // afm 03-07-08
-	    if (instance.stacked)
-	    {
-		    writer.write(Integer.toString(instance.heads_pred[i]));  writer.write('\t');
-		    writer.write(instance.deprels_pred[i]);                  writer.write('\t');	    	
-	    }
-	    writer.write(Integer.toString(instance.heads[i]));  writer.write('\t');
-	    writer.write(instance.deprels[i]);                  writer.write('\t');
-	    writer.write("-\t-");
-	    writer.newLine();
-	}
-	writer.newLine();
-
+        for (int i=0; i<instance.length(); i++) {
+            final String lemma = instance.lemmas != null ? instance.lemmas[i] : instance.forms[i];
+            final String cpostag = instance.cpostags != null ? instance.cpostags[i] : instance.postags[i];
+            writer.write(Integer.toString(i + 1));              writer.write('\t');
+            writer.write(instance.forms[i]);                    writer.write('\t');
+            writer.write(lemma);                                writer.write('\t');
+            writer.write(cpostag);                              writer.write('\t');
+            writer.write(instance.postags[i]);                  writer.write('\t');
+            writer.write("_");                                  writer.write('\t');
+            // afm 03-07-08
+            if (instance.stacked)
+            {
+                writer.write(Integer.toString(instance.heads_pred[i]));  writer.write('\t');
+                writer.write(instance.deprels_pred[i]);                  writer.write('\t');
+            }
+            writer.write(Integer.toString(instance.heads[i]));  writer.write('\t');
+            writer.write(instance.deprels[i]);                  writer.write('\t');
+            writer.write("_\t_");
+            writer.newLine();
+        }
+        writer.newLine();
     }
 }
