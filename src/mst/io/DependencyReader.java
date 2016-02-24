@@ -30,48 +30,51 @@ public abstract class DependencyReader {
     protected BufferedReader inputReader;
     protected boolean labeled = true;
 
-    public static DependencyReader createDependencyReader (String format, 
-							   boolean discourseMode, boolean stacked, boolean useStemmingIfLemmasAbsent) 
-	throws IOException {
+    public static DependencyReader createDependencyReader(String format,
+                                                          boolean discourseMode,
+                                                          boolean stacked,
+                                                          boolean useStemmingIfLemmasAbsent) throws IOException {
 
-	if (format.equals("MST")) {
-	    return new MSTReader();
-	} else if (format.equals("CONLL")) {
-	    return new CONLLReader(discourseMode, stacked, useStemmingIfLemmasAbsent);
-	} else {
-	    System.out.println("!!!!!!!  Not a supported format: " + format);
-	    System.out.println("********* Assuming CONLL format. **********");
-	    return new CONLLReader(discourseMode, stacked, useStemmingIfLemmasAbsent);
-	}
+        if (format.equals("MST")) {
+            return new MSTReader();
+        } else if (format.equals("CONLL")) {
+            return new CONLLReader(discourseMode, stacked, useStemmingIfLemmasAbsent);
+        } else {
+            System.out.println("!!!!!!!  Not a supported format: " + format);
+            System.out.println("********* Assuming CONLL format. **********");
+            return new CONLLReader(discourseMode, stacked, useStemmingIfLemmasAbsent);
+        }
     }
 
-    public static DependencyReader createDependencyReader (String format)
-	throws IOException {
-
-	return createDependencyReader(format, false, false, false);
+    public static DependencyReader createDependencyReader (String format) throws IOException {
+        return createDependencyReader(format, false, false, false);
     }
 
 
-    public boolean startReading (String file) throws IOException {
-	labeled = fileContainsLabels(file);
-	inputReader = new BufferedReader(new InputStreamReader(new FileInputStream(file),"UTF8"));
-	return labeled;
+    public boolean startReading(String file) throws IOException {
+        labeled = fileContainsLabels(file);
+        inputReader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF8"));
+        return labeled;
+    }
+
+    public boolean startReadingString(String doc) {
+        labeled = true;
+        inputReader = new BufferedReader(new StringReader(doc));
+        return labeled;
     }
 
     public boolean isLabeled() {
-	return labeled;
+        return labeled;
     }
 
     public abstract mst.DependencyInstance getNext() throws IOException;
 
     protected abstract boolean fileContainsLabels(String filename) throws IOException;
 
-
     protected String normalize (String s) {
-	if(s.matches("[0-9]+|[0-9]+\\.[0-9]+|[0-9]+[0-9,]+"))
-	    return "<num>";
+        if(s.matches("[0-9]+|[0-9]+\\.[0-9]+|[0-9]+[0-9,]+"))
+            return "<num>";
 
-	return s;
-    }	
-
+        return s;
+    }
 }

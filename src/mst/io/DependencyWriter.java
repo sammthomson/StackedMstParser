@@ -33,44 +33,40 @@ public abstract class DependencyWriter {
     protected boolean labeled = false;
 
     public static DependencyWriter createDependencyWriter (String format, boolean labeled) throws IOException {
-	if (format.equals("MST")) {
-	    return new MSTWriter(labeled);
-	} else if (format.equals("CONLL")) {
-	    return new CONLLWriter(labeled);
-	} else {
-	    System.out.println("!!!!!!!  Not a supported format: " + format);
-	    System.out.println("********* Assuming CONLL format. **********");
-	    return new CONLLWriter(labeled);
-	}
+        if (format.equals("MST")) {
+            return new MSTWriter(labeled);
+        } else if (format.equals("CONLL")) {
+            return new CONLLWriter(labeled);
+        } else {
+            System.out.println("!!!!!!!  Not a supported format: " + format);
+            System.out.println("********* Assuming CONLL format. **********");
+            return new CONLLWriter(labeled);
+        }
     }
 
     public void startWriting (String file) throws IOException {
-	writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),"UTF8"));
+        writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file),"UTF8"));
     }
 
     public void finishWriting () throws IOException {
-	writer.flush();
-	writer.close();
+        writer.flush();
+        writer.close();
     }
 
     public boolean isLabeled() {
-	return labeled;
+        return labeled;
     }
 
     public abstract void write(DependencyInstance instance) throws IOException;
 
-	// return whatever would be written as a String instead
-	public String encode(DependencyInstance instance) {
-		final BufferedWriter oldWriter = writer;
-		final BufferedWriter stringWriter = new BufferedWriter(new StringWriter());
-		writer = stringWriter;
-		try {
-			write(instance);
-			return stringWriter.toString();
-		} catch (IOException e) {
-			throw new RuntimeException("ain't never gonna happen");
-		} finally {
-			writer = oldWriter;
-		}
-	}
+    // return a String instead of writing to file
+    public String encode(DependencyInstance instance) {
+        final StringWriter stringWriter = new StringWriter();
+        writer = new BufferedWriter(stringWriter);
+        try {
+            write(instance);
+            writer.flush();
+        } catch (IOException e) { /* ain't never gonna happen */ }
+        return stringWriter.toString();
+    }
 }

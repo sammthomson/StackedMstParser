@@ -1,18 +1,10 @@
 package mst;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ListIterator;
-
+import gnu.trove.TIntArrayList;
 import mst.io.DependencyReader;
 import mst.io.DependencyWriter;
 
-import gnu.trove.TIntArrayList;
+import java.io.*;
 
 public class DependencyPipe {
 
@@ -20,11 +12,11 @@ public class DependencyPipe {
 
 	public Alphabet typeAlphabet;
 
-	private DependencyReader depReader;
-	private DependencyWriter depWriter;
+	public DependencyReader depReader;
+	public DependencyWriter depWriter =
+			DependencyWriter.createDependencyWriter("CONLL", true);
 
 	public String[] types;
-	public int[] typesInt;
 
 	public boolean labeled = false;
 	private boolean isCONLL = true;
@@ -83,7 +75,7 @@ public class DependencyPipe {
 		for(int i = 1; i < heads.length; i++) {
 			spans.append(heads[i]).append("|").append(i).append(":").append(typeAlphabet.lookupIndex(labs[i])).append(" ");
 		}
-		instance.actParseTree = spans.substring(0,spans.length()-1);
+		instance.actParseTree = spans.substring(0, spans.length()-1);
 
 		return instance;
 	}

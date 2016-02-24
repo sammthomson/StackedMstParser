@@ -4,26 +4,21 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import static edu.umass.cs.mallet.base.util.IoUtils.contentsAsString;
-
 
 public class DependencyEnglish2OProjParser {
     /*
      * arg[0]=modelfile
-     * arg[1]=tempdir
-     * arg[2]=port
+     * arg[1]=port
      */
     public static void main(String[] args) throws Exception {
-        if(args.length != 3) {
-            System.out.println("Usage: DependencyEnglish2OProjParser <model-file> <tmpdir> <port>");
+        if(args.length != 2) {
+            System.out.println("Usage: DependencyEnglish2OProjParser <model-file> <port>");
             System.exit(1);
         }
         final String modelFile = args[0].trim();
-        final String tempDir = args[1];
-        final int port = Integer.parseInt(args[2].trim());
+        final int port = Integer.parseInt(args[1].trim());
 
         //INITIALIZE PARSER
-        System.setProperty("java.io.tmpdir", tempDir);
         final ParserOptions options = new ParserOptions(new String[] {
             "test",
             "separate-lab",
@@ -32,7 +27,6 @@ public class DependencyEnglish2OProjParser {
             "order:2",
             "format:CONLL"
         });
-        System.err.println("Default temp directory:" + System.getProperty("java.io.tmpdir"));
         final DependencyPipe pipe = options.secondOrder ?
                 new DependencyPipe2O(options) : new DependencyPipe(options);
         final DependencyParser dp = new DependencyParser(pipe, options);
@@ -42,6 +36,7 @@ public class DependencyEnglish2OProjParser {
         pipe.printModelStats(dp.params);
         pipe.closeAlphabets();
 
+        // Start server and run forever
         final ServerSocket parseServer = new ServerSocket(port);
         while (true) {
             System.err.println("Waiting for Connection on Port: "+port);
@@ -53,29 +48,13 @@ public class DependencyEnglish2OProjParser {
                 final PrintWriter outputWriter =
                         new PrintWriter(new PrintStream(clientSocket.getOutputStream()));
                 String inputLine;
-                String doc = "";
                 while ((inputLine = br.readLine()) != null) {
                     if(inputLine.trim().equals("*"))
                         break;
-                    doc = doc + Util.getCoNLLFormat(inputLine);
+                    final String output = dp.parsePosTaggedLine(inputLine);
+                    outputWriter.print(output);
+                    outputWriter.flush();
                 }
-                // WRITE INPUT TO TEMP FILE
-                final File tempFile = File.createTempFile("serverInputFile", ".txt");
-                // Delete temp file when program exits.
-                tempFile.deleteOnExit();
-                // Write output to temp file
-                final BufferedWriter out = new BufferedWriter(new FileWriter(tempFile));
-                out.write(doc);
-                out.close();
-                final File parseFile = File.createTempFile("parsedServerFile",".txt");
-                options.testfile = tempFile.getAbsolutePath();
-                options.outfile = parseFile.getAbsolutePath();
-                dp.outputParses(null);
-                final String output = contentsAsString(new File(parseFile.getAbsolutePath()));
-                tempFile.delete();
-                parseFile.delete();
-                outputWriter.print(output);
-                outputWriter.flush();
                 outputWriter.close();
             } catch (Exception e) {
                 e.printStackTrace();
