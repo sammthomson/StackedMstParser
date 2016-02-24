@@ -5,14 +5,14 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 
-public class DependencyEnglish2OProjParser {
-    /*
+public class SecondOrderProjectiveSocketServer {
+    /**
      * arg[0]=modelfile
      * arg[1]=port
      */
     public static void main(String[] args) throws Exception {
         if(args.length != 2) {
-            System.out.println("Usage: DependencyEnglish2OProjParser <model-file> <port>");
+            System.out.println("Usage: SecondOrderProjectiveSocketServer <model-file> <port>");
             System.exit(1);
         }
         final String modelFile = args[0].trim();
@@ -27,14 +27,13 @@ public class DependencyEnglish2OProjParser {
             "order:2",
             "format:CONLL"
         });
-        final DependencyPipe pipe = options.secondOrder ?
-                new DependencyPipe2O(options) : new DependencyPipe(options);
-        final DependencyParser dp = new DependencyParser(pipe, options);
+        final DependencyPipe pipeline = new DependencyPipe2O(options);
+        final DependencyParser parser = new DependencyParser(pipeline, options);
         System.err.print("\tLoading model for Dependency Parser...\n");
-        dp.loadModel(options.modelName);
+        parser.loadModel(options.modelName);
         System.err.println("done.");
-        pipe.printModelStats(dp.params);
-        pipe.closeAlphabets();
+        pipeline.printModelStats(parser.params);
+        pipeline.closeAlphabets();
 
         // Start server and run forever
         final ServerSocket parseServer = new ServerSocket(port);
@@ -43,19 +42,19 @@ public class DependencyEnglish2OProjParser {
             try {
                 final Socket clientSocket = parseServer.accept();
                 System.err.println("Connection Accepted From: " + clientSocket.getInetAddress());
-                final BufferedReader br =
+                final BufferedReader socketIn =
                         new BufferedReader(new InputStreamReader(new DataInputStream(clientSocket.getInputStream())));
-                final PrintWriter outputWriter =
+                final PrintWriter socketOut =
                         new PrintWriter(new PrintStream(clientSocket.getOutputStream()));
                 String inputLine;
-                while ((inputLine = br.readLine()) != null) {
+                while ((inputLine = socketIn.readLine()) != null) {
                     if(inputLine.trim().equals("*"))
                         break;
-                    final String output = dp.parsePosTaggedLine(inputLine);
-                    outputWriter.print(output);
-                    outputWriter.flush();
+                    final String output = parser.parsePosTaggedLine(inputLine);
+                    socketOut.print(output);
+                    socketOut.flush();
                 }
-                outputWriter.close();
+                socketOut.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }

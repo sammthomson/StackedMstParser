@@ -16,6 +16,6 @@ find target \( -name "*.class" \) -exec rm '{}' \;
 javac -sourcepath src \
   -cp "${CLASSPATH}" \
   -d target \
-  src/mst/DependencyEnglish2OProjParser.java \
+  src/mst/SecondOrderProjectiveSocketServer.java \
   src/mst/DependencyParser.java \
   src/mst/DependencyClient.java
