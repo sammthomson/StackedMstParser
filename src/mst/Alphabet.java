@@ -14,6 +14,8 @@
 
 package mst;
 
+import gnu.trove.TObjectIntProcedure;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -86,6 +88,34 @@ public class Alphabet implements Serializable {
 	return growthStopped;
     }
 
+    public static Pair<Alphabet, double[]> removeZeros(Alphabet alphabet, final double[] params) {
+        // count nonZeros
+        int numNonZeros = 0;
+        for (double param : params) {
+            if (param != 0.0) numNonZeros++;
+        }
+        if (numNonZeros == alphabet.numEntries) {
+            // no zero entries, nothing to do
+            return Pair.of(alphabet, params);
+        } else {
+            // make a new Alphabet and array with only the non-zero entries
+            final Alphabet newAlphabet = new Alphabet(numNonZeros);
+            final double[] newParams = new double[numNonZeros];
+            alphabet.map.forEachEntry(new TObjectIntProcedure() {
+                public boolean execute(Object paramName, int paramIdx) {
+                    final double newParamVal = params[paramIdx];
+                    if (newParamVal != 0.0) {
+                        newAlphabet.map.put(paramName, newAlphabet.numEntries);
+                        newParams[newAlphabet.numEntries] = newParamVal;
+                        newAlphabet.numEntries++;
+                    }
+                    return true;
+                }
+            });
+            newAlphabet.growthStopped = alphabet.growthStopped;
+            return Pair.of(newAlphabet, newParams);
+        }
+    }
 
     // Serialization 
 		

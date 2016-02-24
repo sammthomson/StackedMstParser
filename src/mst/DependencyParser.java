@@ -198,9 +198,11 @@ public class DependencyParser {
 	// Saving and loading models
 	///////////////////////////////////////////////////////
 	public void saveModel(String file) throws IOException {
-		ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file));
-		out.writeObject(params.parameters);
-		out.writeObject(pipe.dataAlphabet);
+		final ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file));
+		// Only save features with non-zero weights
+		final Pair<Alphabet, double[]> nonZeros = Alphabet.removeZeros(pipe.dataAlphabet, params.parameters);
+		out.writeObject(nonZeros.snd);
+		out.writeObject(nonZeros.fst);
 		out.writeObject(pipe.typeAlphabet);
 
 		// afm 06-04-08
@@ -337,12 +339,17 @@ public class DependencyParser {
 		if (options.separateLab) {
 			// ask whether instance contains level0 information
 			//Note, forms and pos have the root. labels and heads do not
-			if (options.stackedLevel1) {
-				labels = labelClassifier.outputLabels(classifier, unparsedSentence.forms, unparsedSentence.postags, labels, heads, unparsedSentence.deprels_pred, unparsedSentence.heads_pred, unparsedSentence);
-			} else {
-				labels = labelClassifier.outputLabels(classifier, unparsedSentence.forms, unparsedSentence.postags, labels, heads, null, null, unparsedSentence);
-			}
-
+			final String[] deprelsPred = options.stackedLevel1 ? unparsedSentence.deprels_pred : null;
+			final int[] headsPred = options.stackedLevel1 ? unparsedSentence.heads_pred : null;
+			labels = labelClassifier.outputLabels(
+					classifier,
+					unparsedSentence.forms,
+					unparsedSentence.postags,
+					labels,
+					heads,
+					deprelsPred,
+					headsPred,
+					unparsedSentence);
 		}
 
 		// afm 03-07-08
