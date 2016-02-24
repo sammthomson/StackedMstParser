@@ -59,4 +59,18 @@ public abstract class DependencyWriter {
 
     public abstract void write(DependencyInstance instance) throws IOException;
 
+	// return whatever would be written as a String instead
+	public String encode(DependencyInstance instance) {
+		final BufferedWriter oldWriter = writer;
+		final BufferedWriter stringWriter = new BufferedWriter(new StringWriter());
+		writer = stringWriter;
+		try {
+			write(instance);
+			return stringWriter.toString();
+		} catch (IOException e) {
+			throw new RuntimeException("ain't never gonna happen");
+		} finally {
+			writer = oldWriter;
+		}
+	}
 }

@@ -230,129 +230,175 @@ public class DependencyParser {
 
 
 	//////////////////////////////////////////////////////
-	// Get Best Parses ///////////////////////////////////
+	// Get Best Parse ///////////////////////////////////
 	//////////////////////////////////////////////////////
-	public void outputParses (int[] ignore) throws IOException {
 
-		String tFile = options.testfile;
-		String file = options.outfile;
+    public DependencyInstance getBestParse(DependencyInstance unparsedSentence) {
+        final LabelClassifier labelClassifier = new LabelClassifier(options);
 
-		long start = System.currentTimeMillis();
+        final String[] forms = unparsedSentence.forms;
+        int length = forms.length;
+
+        FeatureVector[][][] fvs = new FeatureVector[forms.length][forms.length][2];
+        double[][][] probs = new double[forms.length][forms.length][2];
+        FeatureVector[][][][] nt_fvs = new FeatureVector[forms.length][pipe.types.length][2][2];
+        double[][][][] nt_probs = new double[forms.length][pipe.types.length][2][2];
+        FeatureVector[][][] fvs_trips = new FeatureVector[length][length][length];
+        double[][][] probs_trips = new double[length][length][length];
+        FeatureVector[][][] fvs_sibs = new FeatureVector[length][length][2];
+        double[][][] probs_sibs = new double[length][length][2];
+        if(options.secondOrder) {
+            ((DependencyPipe2O) pipe).fillFeatureVectors(
+                    unparsedSentence,
+                    fvs,
+                    probs,
+                    fvs_trips,
+                    probs_trips,
+                    fvs_sibs,
+                    probs_sibs,
+                    nt_fvs,
+                    nt_probs,
+                    params);
+        } else {
+            pipe.fillFeatureVectors(
+                    unparsedSentence,
+                    fvs,
+                    probs,
+                    nt_fvs,
+                    nt_probs,
+                    params);
+        }
+
+        int K = options.testK;
+        Object[][] decoded;
+        if(options.decodeType.equals("proj")) {
+            if(options.secondOrder) {
+                decoded = ((DependencyDecoder2O) decoder).decodeProjective(
+                        unparsedSentence,
+                        fvs,
+                        probs,
+                        fvs_trips,
+                        probs_trips,
+                        fvs_sibs,
+                        probs_sibs,
+                        nt_fvs,
+                        nt_probs,
+                        K);
+            } else {
+                decoded = decoder.decodeProjective(
+                        unparsedSentence,
+                        fvs,
+                        probs,
+                        nt_fvs,
+                        nt_probs,
+                        K);
+            }
+        } else {
+            assert(options.decodeType.equals("non-proj"));
+            if(options.secondOrder) {
+                decoded = ((DependencyDecoder2O)decoder).decodeNonProjective(
+                        unparsedSentence,
+                        fvs,
+                        probs,
+                        fvs_trips,
+                        probs_trips,
+                        fvs_sibs,
+                        probs_sibs,
+                        nt_fvs,
+                        nt_probs,
+                        K);
+            } else {
+                decoded = decoder.decodeNonProjective(
+                        unparsedSentence,
+                        fvs,
+                        probs,
+                        nt_fvs,
+                        nt_probs,
+                        K);
+            }
+        }
+
+        String[] res = ((String) decoded[0][1]).split(" ");
+        String[] pos = unparsedSentence.cpostags;
+
+        String[] formsNoRoot = new String[forms.length-1];
+        String[] posNoRoot = new String[formsNoRoot.length];
+        String[] labels = new String[formsNoRoot.length];
+        int[] heads = new int[formsNoRoot.length];
+
+        for(int j = 0; j < formsNoRoot.length; j++) {
+            formsNoRoot[j] = forms[j+1];
+            posNoRoot[j] = pos[j+1];
+
+            final String[] trip = res[j].split("[\\|:]");
+            labels[j] = pipe.types[Integer.parseInt(trip[2])];
+            heads[j] = Integer.parseInt(trip[0]);
+        }
+
+        //	 afm 06-04-08
+        if (options.separateLab) {
+            /*
+             * ask whether instance contains level0 information
+             */
+            /*
+             * Note, forms and pos have the root. labels and heads do not
+             */
+            if (options.stackedLevel1) {
+                labels = labelClassifier.outputLabels(classifier, unparsedSentence.forms, unparsedSentence.postags, labels, heads, unparsedSentence.deprels_pred, unparsedSentence.heads_pred, unparsedSentence);
+            } else {
+                labels = labelClassifier.outputLabels(classifier, unparsedSentence.forms, unparsedSentence.postags, labels, heads, null, null, unparsedSentence);
+            }
+
+        }
+
+        // afm 03-07-08
+        //if (ignore == null)
+        DependencyInstance out_inst;
+        if (!options.stackedLevel0) {
+            out_inst = new DependencyInstance(formsNoRoot, posNoRoot, labels, heads);
+        } else {
+            int[] headsNoRoot = new int[unparsedSentence.heads.length-1];
+            String[] labelsNoRoot = new String[unparsedSentence.heads.length-1];
+            for (int j = 0; j < headsNoRoot.length; j++) {
+                headsNoRoot[j] = unparsedSentence.heads[j+1];
+                labelsNoRoot[j] = unparsedSentence.deprels[j+1];
+            }
+            out_inst = new DependencyInstance(formsNoRoot, posNoRoot, labelsNoRoot, headsNoRoot);
+            out_inst.stacked = true;
+            out_inst.heads_pred = heads;
+            out_inst.deprels_pred = labels;
+        }
+        return out_inst;
+    }
+
+	public void outputParses(int[] ignore) throws IOException {
+		final String tFile = options.testfile;
+		final String file = options.outfile;
+
+		final long start = System.currentTimeMillis();
 
 		pipe.initInputFile(tFile);
-		//if (ignore == null) // afm 03-07-2008 --- If this is called for each partition, must have initialized output file before 
-		if (!options.train || !options.stackedLevel0) // afm 03-07-2008 --- If this is called for each partition, must have initialized output file before 
+		//if (ignore == null) // afm 03-07-2008 --- If this is called for each partition, must have initialized output file before
+		if (!options.train || !options.stackedLevel0) // afm 03-07-2008 --- If this is called for each partition, must have initialized output file before
 			pipe.initOutputFile(file);
 
 		System.out.print("Processing Sentence: ");
 		DependencyInstance instance = pipe.nextInstance();
 		int cnt = 0;
 		int i = 0;
-		LabelClassifier oc = new LabelClassifier(options);
 		while(instance != null) {
             cnt++;
 			System.out.print(cnt+" ");
-			String[] forms = instance.forms;
 
-			int length = forms.length;
+            // afm 03-07-08 --- If this instance is to be ignored, just go for the next one
+            if (ignore != null && ignore[i] != 0) {
+                instance = pipe.nextInstance();
+                i++;
+                continue;
+            }
 
-			// afm 03-07-08 --- If this instance is to be ignored, just go for the next one
-			if (ignore != null && ignore[i] != 0)
-			{
-				instance = pipe.nextInstance();
-				i++;
-				continue;
-			}	    
-
-			FeatureVector[][][] fvs = new FeatureVector[forms.length][forms.length][2];
-			double[][][] probs = new double[forms.length][forms.length][2];
-			FeatureVector[][][][] nt_fvs = new FeatureVector[forms.length][pipe.types.length][2][2];
-			double[][][][] nt_probs = new double[forms.length][pipe.types.length][2][2];
-			FeatureVector[][][] fvs_trips = new FeatureVector[length][length][length];
-			double[][][] probs_trips = new double[length][length][length];
-			FeatureVector[][][] fvs_sibs = new FeatureVector[length][length][2];
-			double[][][] probs_sibs = new double[length][length][2];
-			if(options.secondOrder)
-				((DependencyPipe2O)pipe).fillFeatureVectors(instance,fvs,probs,
-						fvs_trips,probs_trips,
-						fvs_sibs,probs_sibs,
-						nt_fvs,nt_probs,params);
-			else
-				pipe.fillFeatureVectors(instance,fvs,probs,nt_fvs,nt_probs,params);
-
-
-			int K = options.testK;
-			Object[][] d = null;
-			
-			if(options.decodeType.equals("proj")) {
-                if(options.secondOrder)
-					d = ((DependencyDecoder2O)decoder).decodeProjective(instance,fvs,probs,
-							fvs_trips,probs_trips,
-							fvs_sibs,probs_sibs,
-							nt_fvs,nt_probs,K);
-				else
-					d = decoder.decodeProjective(instance,fvs,probs,nt_fvs,nt_probs,K);
-			}
-			if(options.decodeType.equals("non-proj")) {
-                if(options.secondOrder) {
-                    d = ((DependencyDecoder2O)decoder).decodeNonProjective(instance,fvs,probs,
-							fvs_trips,probs_trips,
-							fvs_sibs,probs_sibs,
-							nt_fvs,nt_probs,K);
-				} else {
-                    d = decoder.decodeNonProjective(instance, fvs, probs, nt_fvs, nt_probs, K);
-                }
-			}
-
-			String[] res = ((String)d[0][1]).split(" ");
-			String[] pos = instance.cpostags;
-
-			String[] formsNoRoot = new String[forms.length-1];
-			String[] posNoRoot = new String[formsNoRoot.length];
-			String[] labels = new String[formsNoRoot.length];
-			int[] heads = new int[formsNoRoot.length];
-
-			for(int j = 0; j < formsNoRoot.length; j++) {
-                formsNoRoot[j] = forms[j+1];
-				posNoRoot[j] = pos[j+1];
-
-				String[] trip = res[j].split("[\\|:]");
-				labels[j] = pipe.types[Integer.parseInt(trip[2])];
-				heads[j] = Integer.parseInt(trip[0]);
-			}		
-			
-			//	 afm 06-04-08
-			if (options.separateLab) {
-				/*
-				 * ask whether instance contains level0 information
-				 */
-				/*
-				 * Note, forms and pos have the root. labels and heads do not
-				 */
-				if (options.stackedLevel1)
-					labels=oc.outputLabels(classifier, instance.forms, instance.postags, labels, heads, instance.deprels_pred, instance.heads_pred, instance);
-				else
-					labels=oc.outputLabels(classifier, instance.forms, instance.postags, labels, heads, null, null, instance);
-
-			}
-			
-			// afm 03-07-08
-			//if (ignore == null)
-			if (!options.stackedLevel0)
-				pipe.outputInstance(new DependencyInstance(formsNoRoot, posNoRoot, labels, heads));
-			else {
-                int[] headsNoRoot = new int[instance.heads.length-1];
-				String[] labelsNoRoot = new String[instance.heads.length-1];
-				for(int j = 0; j < headsNoRoot.length; j++) {
-                    headsNoRoot[j] = instance.heads[j+1];
-					labelsNoRoot[j] = instance.deprels[j+1];
-				}
-				DependencyInstance out_inst = new DependencyInstance(formsNoRoot, posNoRoot, labelsNoRoot, headsNoRoot);
-				out_inst.stacked = true;
-				out_inst.heads_pred = heads;
-				out_inst.deprels_pred = labels;
-				pipe.outputInstance(out_inst);
-			}    		
+            final DependencyInstance out_inst = getBestParse(instance);
+            pipe.outputInstance(out_inst);
 
 			//String line1 = ""; String line2 = ""; String line3 = ""; String line4 = "";
 			//for(int j = 1; j < pos.length; j++) {
@@ -367,8 +413,8 @@ public class DependencyParser {
 			instance = pipe.nextInstance();
 			i++;
 		}
-		//if (ignore == null) // afm 03-07-2008 --- If this is called for each partition (ignore != null), must close pipe outside the loop 	
-		if (!options.train || !options.stackedLevel0) // afm 03-07-2008 --- If this is called for each partition (ignore != null), must close pipe outside the loop 	
+		//if (ignore == null) // afm 03-07-2008 --- If this is called for each partition (ignore != null), must close pipe outside the loop
+		if (!options.train || !options.stackedLevel0) // afm 03-07-2008 --- If this is called for each partition (ignore != null), must close pipe outside the loop
 			pipe.close();
 
 		long end = System.currentTimeMillis();
@@ -376,7 +422,7 @@ public class DependencyParser {
 
 	}
 
-	/////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////
 	// RUNNING THE PARSER
 	////////////////////////////////////////////////////
 	public static void main (String[] args) throws Exception {
